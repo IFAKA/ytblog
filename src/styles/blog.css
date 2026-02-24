@@ -202,6 +202,8 @@ html:not([dark]) .ytblog-article-tldr {
   border-radius: 8px;
   margin-bottom: 16px;
   display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
 }
 
 /* ——— STYLE 1: Regular Paragraph (flow mode) ——— */

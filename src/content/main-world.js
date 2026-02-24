@@ -195,6 +195,13 @@
     return 0;
   }
 
+  function extractStoryboardSpec() {
+    try {
+      const sb = window.ytInitialPlayerResponse?.storyboards?.playerStoryboardSpecRenderer;
+      return sb?.highResSpec || sb?.spec || null;
+    } catch { return null; }
+  }
+
   function getVideoInfo() {
     try {
       const playerResponse = window.ytInitialPlayerResponse;
@@ -272,8 +279,10 @@
     const videoInfo = getVideoInfo();
     const chapters = extractChapters();
     const extended = extractExtendedData();
+    const storyboardSpec = extractStoryboardSpec();
 
     console.log('[YTBlog] Caption tracks:', tracks?.length || 0, '| Chapters:', chapters?.length || 0, '| Extended:', Object.keys(extended).length);
+    if (storyboardSpec) console.log('[YTBlog] Storyboard spec:', storyboardSpec.substring(0, 80) + '...');
 
     window.postMessage({
       type: 'YTBLOG_CAPTION_DATA',
@@ -281,6 +290,7 @@
       videoInfo: videoInfo,
       chapters: chapters,
       extended: extended,
+      storyboardSpec: storyboardSpec,
     }, window.location.origin);
   }
 

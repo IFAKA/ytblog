@@ -26,6 +26,7 @@
   let videoInfo = null;
   let chapters = null;
   let extendedData = null;
+  let storyboardSpec = null;
   let blogRenderer = null;
   let highlighter = null;
   let active = false;
@@ -40,6 +41,7 @@
       videoInfo = event.data.videoInfo;
       chapters = event.data.chapters || null;
       extendedData = event.data.extended || null;
+      storyboardSpec = event.data.storyboardSpec || null;
 
       // Description timestamps as chapter fallback
       if (!chapters && extendedData?.descriptionTimestamps?.length >= 2) {
@@ -61,6 +63,107 @@
       if (stage) YT.updateLoadingProgress(stage, message);
     }
   });
+
+  // ——— Storyboard Helpers ———
+  function parseStoryboardSpec(spec) {
+    // Spec is pipe-delimited with levels separated by "||" or "#|" patterns
+    // Format: baseUrl#|w|h|count|cols|rows|...||baseUrl#|w|h|count|cols|rows|...
+    // We split on "|" and reconstruct levels by detecting URL patterns
+    const levels = [];
+    // Split by "||" to separate resolution levels (YouTube separates with double pipe or hash boundaries)
+    const parts = spec.split('|');
+
+    let i = 0;
+    while (i < parts.length) {
+      // Find a part that looks like a URL (contains http)
+      let baseUrl = '';
+      while (i < parts.length && !parts[i].includes('http')) i++;
+      if (i >= parts.length) break;
+
+      baseUrl = parts[i]; i++;
+      // The URL may have been split if it contained "|" — but YouTube storyboard URLs use # as separator
+      // baseUrl ends with $N.jpg or similar, fields follow: w, h, count, cols, rows, ...sigh...
+      // Sometimes baseUrl has trailing "#" which we strip
+      baseUrl = baseUrl.replace(/#$/, '');
+
+      if (i + 4 >= parts.length) break;
+      const w = parseInt(parts[i], 10); i++;
+      const h = parseInt(parts[i], 10); i++;
+      const count = parseInt(parts[i], 10); i++;
+      const cols = parseInt(parts[i], 10); i++;
+      const rows = parseInt(parts[i], 10); i++;
+
+      // Remaining fields until next URL or end: interval(?), sigh param, etc.
+      // The next field is often the total number of sheets or a sigh param
+      let sigh = '';
+      // Consume remaining non-URL fields for this level
+      const extras = [];
+      while (i < parts.length && !parts[i].includes('http')) {
+        extras.push(parts[i]); i++;
+      }
+      // Last extra is typically the sigh param
+      if (extras.length > 0) sigh = extras[extras.length - 1];
+
+      if (w && h && cols && rows && count) {
+        levels.push({ baseUrl, tileWidth: w, tileHeight: h, totalTiles: count, cols, rows, sigh });
+      }
+    }
+    return levels;
+  }
+
+  function resolveStoryboardUrl(level, sheetIndex) {
+    let url = level.baseUrl.replace('$N', sheetIndex);
+    if (level.sigh) url = url.replace('$M', level.sigh);
+    return url;
+  }
+
+  function loadImage(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Image load failed'));
+      img.src = url;
+    });
+  }
+
+  async function resolveStoryboardFrame(spec, timestampMs, durationSeconds) {
+    const levels = parseStoryboardSpec(spec);
+    if (!levels.length) return null;
+
+    // Pick highest-res level (last one)
+    const level = levels[levels.length - 1];
+    const tilesPerSheet = level.cols * level.rows;
+    // Interval between frames = total duration / total tiles
+    const intervalMs = (durationSeconds * 1000) / level.totalTiles;
+    if (!intervalMs || intervalMs <= 0) return null;
+
+    const frameIndex = Math.min(Math.floor(timestampMs / intervalMs), level.totalTiles - 1);
+    const sheetIndex = Math.floor(frameIndex / tilesPerSheet);
+    const posInSheet = frameIndex % tilesPerSheet;
+    const col = posInSheet % level.cols;
+    const row = Math.floor(posInSheet / level.cols);
+
+    const sheetUrl = resolveStoryboardUrl(level, sheetIndex);
+    const img = await loadImage(sheetUrl);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = level.tileWidth;
+    canvas.height = level.tileHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, col * level.tileWidth, row * level.tileHeight, level.tileWidth, level.tileHeight, 0, 0, level.tileWidth, level.tileHeight);
+    return canvas.toDataURL('image/jpeg', 0.85);
+  }
+
+  function isDuplicateOfMainThumb(thumbUrl, mainThumbUrl) {
+    if (!thumbUrl || !mainThumbUrl) return false;
+    // Strip query params and compare path — YouTube thumbnails share a pattern
+    try {
+      const a = new URL(thumbUrl).pathname;
+      const b = new URL(mainThumbUrl).pathname;
+      return a === b;
+    } catch { return thumbUrl === mainThumbUrl; }
+  }
 
   // ——— Main Read Click Handler ———
   async function handleReadClick() {
@@ -133,6 +236,20 @@
             }
             if (chapters[i].startMs !== undefined) {
               processedData.sections[i].timestampMs = chapters[i].startMs;
+            }
+          }
+        }
+
+        // Storyboard fallback for missing or duplicate thumbnails
+        if (storyboardSpec) {
+          const mainThumb = extendedData?.maxThumbnail;
+          const duration = videoInfo?.lengthSeconds || 0;
+          for (const section of processedData.sections) {
+            const needsFallback = !section.thumbnailUrl || isDuplicateOfMainThumb(section.thumbnailUrl, mainThumb);
+            if (needsFallback && section.timestampMs !== undefined && duration > 0) {
+              try {
+                section.thumbnailUrl = await resolveStoryboardFrame(storyboardSpec, section.timestampMs, duration);
+              } catch { /* no thumbnail, that's fine */ }
             }
           }
         }
