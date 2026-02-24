@@ -6,20 +6,15 @@
   'use strict';
 
   function extractCaptionTracks() {
-    try {
-      const sources = [
-        () => window.ytInitialPlayerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks,
-        () => window.ytplayer?.config?.args?.raw_player_response?.captions?.playerCaptionsTracklistRenderer?.captionTracks,
-        () => document.getElementById('movie_player')?.getPlayerResponse?.()?.captions?.playerCaptionsTracklistRenderer?.captionTracks,
-      ];
-      for (const src of sources) {
-        try { const t = src(); if (t) return t; } catch {}
-      }
-      return null;
-    } catch (e) {
-      console.warn('[YTBlog] Failed to extract caption tracks:', e);
-      return null;
+    const sources = [
+      () => window.ytInitialPlayerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks,
+      () => window.ytplayer?.config?.args?.raw_player_response?.captions?.playerCaptionsTracklistRenderer?.captionTracks,
+      () => document.getElementById('movie_player')?.getPlayerResponse?.()?.captions?.playerCaptionsTracklistRenderer?.captionTracks,
+    ];
+    for (const src of sources) {
+      try { const t = src(); if (t) return t; } catch {}
     }
+    return null;
   }
 
   function extractChapters() {

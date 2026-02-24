@@ -240,12 +240,19 @@
           }
         }
 
-        // Storyboard fallback for missing or duplicate thumbnails
+        // Storyboard fallback for missing, duplicate, or all-same thumbnails
         if (storyboardSpec) {
           const mainThumb = extendedData?.maxThumbnail;
           const duration = videoInfo?.lengthSeconds || 0;
+
+          // Detect if all chapter thumbnails are the same URL
+          const thumbUrls = processedData.sections.map(s => s.thumbnailUrl).filter(Boolean);
+          const allSame = thumbUrls.length > 1 && thumbUrls.every(u => u === thumbUrls[0]);
+
           for (const section of processedData.sections) {
-            const needsFallback = !section.thumbnailUrl || isDuplicateOfMainThumb(section.thumbnailUrl, mainThumb);
+            const needsFallback = !section.thumbnailUrl
+              || allSame
+              || isDuplicateOfMainThumb(section.thumbnailUrl, mainThumb);
             if (needsFallback && section.timestampMs !== undefined && duration > 0) {
               try {
                 section.thumbnailUrl = await resolveStoryboardFrame(storyboardSpec, section.timestampMs, duration);
@@ -372,8 +379,6 @@
     switch (e.key) {
       case 't':
       case 'T':
-        closeReader();
-        break;
       case 'Escape':
         closeReader();
         break;

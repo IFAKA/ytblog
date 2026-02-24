@@ -252,17 +252,9 @@ window.YTBlog = window.YTBlog || {};
             i++;
           }
           el.appendChild(ul);
-        } else if (thought.mode === 'impact') {
-          const p = document.createElement('p');
-          p.className = 'ytblog-article-insight';
-          p.dataset.section = sectionIndex;
-          p.dataset.thought = i;
-          p.innerHTML = this._processText(thought.text, thought.emphasis);
-          el.appendChild(p);
-          i++;
         } else {
-          // flow (default)
           const p = document.createElement('p');
+          if (thought.mode === 'impact') p.className = 'ytblog-article-insight';
           p.dataset.section = sectionIndex;
           p.dataset.thought = i;
           p.innerHTML = this._processText(thought.text, thought.emphasis);

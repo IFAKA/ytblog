@@ -31,8 +31,8 @@ export async function checkModel(name) {
 }
 
 export async function generate({ model, prompt, system, format = 'json', stream = false, signal }) {
-  // Combine caller's abort signal with a 120s timeout
-  const timeout = AbortSignal.timeout(120000);
+  // Combine caller's abort signal with a 5min timeout
+  const timeout = AbortSignal.timeout(300000);
   const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
 
   const res = await fetch(`${OLLAMA_BASE}/api/generate`, {
@@ -53,27 +53,6 @@ export async function generate({ model, prompt, system, format = 'json', stream 
     parsed = typeof data.response === 'string' ? JSON.parse(data.response) : data.response;
   } catch {
     throw new Error('Failed to parse Ollama JSON response');
-  }
-
-  // Validate expected structure (sections array with thoughts)
-  if (parsed && parsed.sections) {
-    if (!Array.isArray(parsed.sections)) {
-      throw new Error('Invalid response: sections must be an array');
-    }
-    for (let i = 0; i < parsed.sections.length; i++) {
-      const s = parsed.sections[i];
-      if (!s.thoughts || !Array.isArray(s.thoughts)) {
-        parsed.sections[i].thoughts = [];
-      }
-      if (!s.title) {
-        parsed.sections[i].title = `Section ${i + 1}`;
-      }
-    }
-    // Filter out empty sections
-    parsed.sections = parsed.sections.filter(s => s.thoughts.length > 0);
-    if (!Array.isArray(parsed.takeaways)) {
-      parsed.takeaways = [];
-    }
   }
 
   return parsed;

@@ -242,14 +242,16 @@ window.YTBlog = window.YTBlog || {};
       }
     }
 
-    _removeHighlight(markEl) {
-      const id = markEl.dataset.highlightId;
+    _unwrapMark(markEl) {
       const parent = markEl.parentNode;
-      while (markEl.firstChild) {
-        parent.insertBefore(markEl.firstChild, markEl);
-      }
+      while (markEl.firstChild) parent.insertBefore(markEl.firstChild, markEl);
       markEl.remove();
       parent.normalize();
+    }
+
+    _removeHighlight(markEl) {
+      const id = markEl.dataset.highlightId;
+      this._unwrapMark(markEl);
 
       // Remove from storage
       const idx = this._highlights.findIndex(h => h.id === id);
@@ -267,12 +269,7 @@ window.YTBlog = window.YTBlog || {};
       if (last.action === 'add') {
         // Undo an add → remove the highlight
         const mark = this._stage.querySelector(`[data-highlight-id="${last.item.id}"]`);
-        if (mark) {
-          const parent = mark.parentNode;
-          while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
-          mark.remove();
-          parent.normalize();
-        }
+        if (mark) this._unwrapMark(mark);
         const idx = this._highlights.findIndex(h => h.id === last.item.id);
         if (idx !== -1) this._highlights.splice(idx, 1);
         this._saveHighlights();

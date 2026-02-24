@@ -108,8 +108,5 @@ window.YTBlog = window.YTBlog || {};
     return document.getElementById('ytblog-stage');
   };
 
-  window.YTBlog.getContentArea = function() {
-    const stage = window.YTBlog.getStage();
-    return stage?.querySelector('.ytblog-content') || null;
-  };
+
 })();

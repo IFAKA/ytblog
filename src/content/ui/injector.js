@@ -79,8 +79,7 @@ window.YTBlog.injectReadButton = function(onClick, captionTracks) {
 };
 
 window.YTBlog.removeReadButton = function() {
-  const btn = document.getElementById('ytblog-read-btn');
-  if (btn) btn.remove();
-  const lang = document.getElementById('ytblog-lang-select');
-  if (lang) lang.remove();
+  for (const id of ['ytblog-read-btn', 'ytblog-lang-select']) {
+    document.getElementById(id)?.remove();
+  }
 };

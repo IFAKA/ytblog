@@ -1,29 +1,4 @@
-export const RESTRUCTURE_PROMPT = `You are transforming a messy video transcript into clean, structured prose for a blog article reader. Return a JSON object with this exact format:
-
-{
-  "sections": [
-    {
-      "title": "Section Title",
-      "recap": "One sentence summary of this section.",
-      "thoughts": [
-        {
-          "text": "A clean, complete thought. One to three sentences.",
-          "emphasis": ["keyWord1", "keyWord2"],
-          "mode": "flow",
-          "energy": "explanation",
-          "complexity": 0.4
-        }
-      ]
-    }
-  ],
-  "takeaways": [
-    "Key takeaway 1",
-    "Key takeaway 2",
-    "Key takeaway 3"
-  ]
-}
-
-Rules for "text":
+const SHARED_RULES = `Rules for "text":
 - Remove ALL filler words: um, uh, like (as filler), you know, basically, sort of, kind of, I mean, right?, so basically
 - Remove false starts, repetitions, and verbal tics
 - Restructure rambling sentences into clear, concise prose
@@ -56,15 +31,10 @@ Rules for "complexity":
 - Higher for technical jargon, dense ideas, multi-clause sentences
 - Lower for simple statements, transitions
 
-Rules for narrative arc:
-- Energy states should follow natural arcs: calm_intro at openings, building_tension before climax, resolution at section ends
-- Limit climax to ~10% of thoughts — overuse dilutes impact
-- Every climax should be preceded by at least one building_tension thought
-
 Rules for mode-energy alignment:
 - impact mode pairs with climax or building_tension (short punchy statements only)
 - stack mode pairs with enumeration
-- Never use impact for explanation or calm_intro — those need room to breathe in flow mode
+- Never use impact for explanation or calm_intro
 
 Rules for emphasis specificity:
 - Choose words with unique semantic weight — proper nouns, numbers, technical terms, emotionally charged words
@@ -77,7 +47,39 @@ Rules for mathematical content:
 - Use double $$ for standalone equations that deserve their own line
 - Common patterns: "x squared" → $x^2$, "square root of x" → $\\sqrt{x}$, "integral from a to b" → $\\int_a^b$, "f of x" → $f(x)$, "sum from i equals 1 to n" → $\\sum_{i=1}^{n}$
 - Preserve the surrounding prose — only the math notation itself goes inside dollar signs
-- If unsure whether something is math, leave it as prose
+- If unsure whether something is math, leave it as prose`;
+
+export const RESTRUCTURE_PROMPT = `You are transforming a messy video transcript into clean, structured prose for a blog article reader. Return a JSON object with this exact format:
+
+{
+  "sections": [
+    {
+      "title": "Section Title",
+      "recap": "One sentence summary of this section.",
+      "thoughts": [
+        {
+          "text": "A clean, complete thought. One to three sentences.",
+          "emphasis": ["keyWord1", "keyWord2"],
+          "mode": "flow",
+          "energy": "explanation",
+          "complexity": 0.4
+        }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Key takeaway 1",
+    "Key takeaway 2",
+    "Key takeaway 3"
+  ]
+}
+
+${SHARED_RULES}
+
+Rules for narrative arc:
+- Energy states should follow natural arcs: calm_intro at openings, building_tension before climax, resolution at section ends
+- Limit climax to ~10% of thoughts — overuse dilutes impact
+- Every climax should be preceded by at least one building_tension thought
 
 Rules for "recap":
 - One sentence summarizing the section's key point
@@ -123,61 +125,12 @@ export const CHAPTER_RESTRUCTURE_PROMPT = `You are transforming a messy video tr
   "recap": "One sentence summary of this chapter."
 }
 
-Rules for "text":
-- Remove ALL filler words: um, uh, like (as filler), you know, basically, sort of, kind of, I mean, right?, so basically
-- Remove false starts, repetitions, and verbal tics
-- Restructure rambling sentences into clear, concise prose
-- Each thought should be 1-3 sentences, a complete idea
-- Preserve the speaker's meaning and personality, just make it crisp
-- Never add information that wasn't in the original
-
-Rules for "emphasis":
-- 1-3 words per thought that carry the most semantic weight
-- These will be visually highlighted
-
-Rules for "mode":
-- "flow" — default, for prose and explanations
-- "impact" — for dramatic moments, key insights, short punchy statements (3-8 words)
-- "stack" — for lists, enumerations, step-by-step content
-
-Rules for "energy":
-- "calm_intro" — opening, setting context
-- "explanation" — teaching, explaining concepts
-- "building_tension" — leading up to a key point
-- "climax" — the key insight or dramatic moment
-- "enumeration" — listing items
-- "contrast" — comparing/contrasting ideas
-- "emotional" — personal stories, feelings
-- "question" — rhetorical or real questions
-- "resolution" — wrapping up, concluding
-
-Rules for "complexity":
-- 0.0-1.0 score
-- Higher for technical jargon, dense ideas, multi-clause sentences
-- Lower for simple statements, transitions
+${SHARED_RULES}
 
 Rules for narrative arc:
 - Energy states should follow natural arcs within this chapter
 - Limit climax to ~10% of thoughts
 - Every climax should be preceded by at least one building_tension thought
-
-Rules for mode-energy alignment:
-- impact mode pairs with climax or building_tension (short punchy statements only)
-- stack mode pairs with enumeration
-- Never use impact for explanation or calm_intro
-
-Rules for emphasis specificity:
-- Choose words with unique semantic weight — proper nouns, numbers, technical terms, emotionally charged words
-- Never emphasize articles, prepositions, or common verbs (the, a, is, was, have, do, get, make)
-- 1-3 emphasis words per thought maximum
-
-Rules for mathematical content:
-- When the transcript contains spoken math (e.g. "x squared plus 2x equals zero"), convert it to LaTeX notation wrapped in dollar signs: $x^2 + 2x = 0$
-- Use single $ for inline math within sentences
-- Use double $$ for standalone equations that deserve their own line
-- Common patterns: "x squared" → $x^2$, "square root of x" → $\\sqrt{x}$, "integral from a to b" → $\\int_a^b$, "f of x" → $f(x)$, "sum from i equals 1 to n" → $\\sum_{i=1}^{n}$
-- Preserve the surrounding prose — only the math notation itself goes inside dollar signs
-- If unsure whether something is math, leave it as prose
 
 Rules for "recap":
 - One sentence summarizing this chapter's key point`;

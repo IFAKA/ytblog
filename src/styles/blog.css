@@ -431,21 +431,4 @@ html:not([dark]) .ytblog-highlight-toolbar button:hover {
   text-align: center;
 }
 
-/* ——— Copy Toast ——— */
-.ytblog-toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 10px 20px;
-  background: #1c1c1c;
-  color: #fff;
-  border-radius: 8px;
-  font: 14px Inter, system-ui, sans-serif;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  z-index: 100;
-  animation: ytblog-fade-in 0.2s ease;
-}
-html:not([dark]) .ytblog-toast {
-  background: #333;
-}
+

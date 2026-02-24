@@ -68,20 +68,18 @@ function pickBestModel(modelDetails) {
   return sweet.length ? sweet[sweet.length - 1] : ranked[0];
 }
 
+async function resolveModel() {
+  const model = await getModel();
+  const health = await checkHealth();
+  if (!health.running) throw new Error('OLLAMA_NOT_RUNNING');
+  const modelCheck = await checkModel(model);
+  if (!modelCheck.available) throw new Error('MODEL_NOT_FOUND');
+  return modelCheck.resolvedModel;
+}
+
 // Full pipeline: single pass for short/normal videos, sentence-chunked for long ones
 async function processTranscript(transcript, sendProgress, durationSeconds = 0, videoContext = null, signal = null) {
-  const model = await getModel();
-
-  const health = await checkHealth();
-  if (!health.running) {
-    throw new Error('OLLAMA_NOT_RUNNING');
-  }
-
-  const modelCheck = await checkModel(model);
-  if (!modelCheck.available) {
-    throw new Error('MODEL_NOT_FOUND');
-  }
-  const resolvedModel = modelCheck.resolvedModel;
+  const resolvedModel = await resolveModel();
 
   const wordCount = transcript.split(/\s+/).length;
   const useSinglePass = durationSeconds > 0
@@ -163,14 +161,7 @@ function validateAndNormalize(data) {
 
 // Chapter-aware pipeline: process each chapter independently
 async function processWithChapters(chapters, sendProgress, signal = null) {
-  const model = await getModel();
-
-  const health = await checkHealth();
-  if (!health.running) throw new Error('OLLAMA_NOT_RUNNING');
-
-  const modelCheck = await checkModel(model);
-  if (!modelCheck.available) throw new Error('MODEL_NOT_FOUND');
-  const resolvedModel = modelCheck.resolvedModel;
+  const resolvedModel = await resolveModel();
 
   // Count total LLM calls for progress (chapters may be sub-chunked)
   const chapterChunks = chapters.map(ch => splitChapterIntoSubChunks(ch.text));

@@ -58,7 +58,8 @@ html[dark] .ytblog-read-btn:hover {
 .ytblog-root {
   position: relative;
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
   background: var(--ytblog-bg);
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
