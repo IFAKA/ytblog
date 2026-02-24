@@ -270,6 +270,7 @@
   }
 
   function sendData() {
+    if (!new URLSearchParams(location.search).get('v')) return;
     const tracks = extractCaptionTracks();
     const videoInfo = getVideoInfo();
     const chapters = extractChapters();

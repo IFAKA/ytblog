@@ -27,13 +27,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/watch*"],
+      "matches": ["*://*.youtube.com/*"],
       "js": ["src/content/main-world.js"],
       "world": "MAIN",
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://www.youtube.com/watch*"],
+      "matches": ["*://*.youtube.com/*"],
       "css": ["vendor/katex/katex.min.css", "src/styles/base.css", "src/styles/blog.css"],
       "js": [
         "vendor/katex/katex.min.js",
