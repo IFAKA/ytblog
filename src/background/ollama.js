@@ -30,12 +30,16 @@ export async function checkModel(name) {
   return { available: !!match, resolvedModel: match || null, reason: match ? null : 'model_not_found', models: health.models };
 }
 
-export async function generate({ model, prompt, system, format = 'json', stream = false }) {
+export async function generate({ model, prompt, system, format = 'json', stream = false, signal }) {
+  // Combine caller's abort signal with a 120s timeout
+  const timeout = AbortSignal.timeout(120000);
+  const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
+
   const res = await fetch(`${OLLAMA_BASE}/api/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model, prompt, system, format, stream }),
-    signal: AbortSignal.timeout(120000),
+    signal: combined,
   });
 
   if (!res.ok) {

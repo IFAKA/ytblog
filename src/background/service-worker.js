@@ -3,6 +3,28 @@ import { buildRestructureRequest, splitIntoSentenceChunks, buildChapterRequest, 
 
 const DEFAULT_MODEL = 'qwen2.5:7b';
 
+// Track active pipeline per tab so we can abort on navigation/reload
+const activePipelines = new Map(); // tabId → AbortController
+
+function abortPipeline(tabId) {
+  const controller = activePipelines.get(tabId);
+  if (controller) {
+    controller.abort();
+    activePipelines.delete(tabId);
+  }
+}
+
+// Abort when tab navigates or closes
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.url || changeInfo.status === 'loading') {
+    abortPipeline(tabId);
+  }
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  abortPipeline(tabId);
+});
+
 // Single pass if video is under 90 minutes OR transcript under 10k words
 // Chunk only for very long content where output JSON gets unreliable
 const SINGLE_PASS_DURATION = 90 * 60;  // 90 minutes in seconds
@@ -47,7 +69,7 @@ function pickBestModel(modelDetails) {
 }
 
 // Full pipeline: single pass for short/normal videos, sentence-chunked for long ones
-async function processTranscript(transcript, sendProgress, durationSeconds = 0, videoContext = null) {
+async function processTranscript(transcript, sendProgress, durationSeconds = 0, videoContext = null, signal = null) {
   const model = await getModel();
 
   const health = await checkHealth();
@@ -70,7 +92,7 @@ async function processTranscript(transcript, sendProgress, durationSeconds = 0, 
     // Single pass — model sees the full transcript
     sendProgress({ stage: 'processing', total: 1, completed: 0 });
     const req = buildRestructureRequest(transcript, resolvedModel, videoContext);
-    const result = await generate(req);
+    const result = await generate({ ...req, signal });
     sendProgress({ stage: 'processing', total: 1, completed: 1 });
     return validateAndNormalize(result);
   }
@@ -83,7 +105,7 @@ async function processTranscript(transcript, sendProgress, durationSeconds = 0, 
   for (let i = 0; i < chunks.length; i++) {
     // Only pass videoContext to the first chunk
     const req = buildRestructureRequest(chunks[i], resolvedModel, i === 0 ? videoContext : null);
-    const result = await generate(req);
+    const result = await generate({ ...req, signal });
     results.push(result);
     sendProgress({ stage: 'processing', total: chunks.length, completed: i + 1 });
   }
@@ -140,7 +162,7 @@ function validateAndNormalize(data) {
 }
 
 // Chapter-aware pipeline: process each chapter independently
-async function processWithChapters(chapters, sendProgress) {
+async function processWithChapters(chapters, sendProgress, signal = null) {
   const model = await getModel();
 
   const health = await checkHealth();
@@ -164,7 +186,7 @@ async function processWithChapters(chapters, sendProgress) {
     if (chunks.length === 1) {
       // Single call for this chapter
       const req = buildChapterRequest(chapter.title, chunks[0], resolvedModel);
-      const result = await generate(req);
+      const result = await generate({ ...req, signal });
       completed++;
       sendProgress({ stage: 'processing', total: totalCalls, completed });
 
@@ -179,7 +201,7 @@ async function processWithChapters(chapters, sendProgress) {
       let recap = '';
       for (const chunk of chunks) {
         const req = buildChapterRequest(chapter.title, chunk, resolvedModel);
-        const result = await generate(req);
+        const result = await generate({ ...req, signal });
         completed++;
         sendProgress({ stage: 'processing', total: totalCalls, completed });
 
@@ -231,6 +253,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'PROCESS_TRANSCRIPT') {
     const tabId = sender.tab?.id;
+
+    // Abort any existing pipeline for this tab
+    if (tabId) abortPipeline(tabId);
+
+    const controller = new AbortController();
+    if (tabId) activePipelines.set(tabId, controller);
+    const { signal } = controller;
+
     const sendProgressToTab = (progress) => {
       if (tabId) {
         try { chrome.tabs.sendMessage(tabId, { type: 'PROCESSING_PROGRESS', ...progress }); } catch {}
@@ -238,12 +268,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     };
 
     const pipeline = message.chapters?.length
-      ? processWithChapters(message.chapters, sendProgressToTab).then(validateAndNormalize)
-      : processTranscript(message.transcript, sendProgressToTab, message.durationSeconds || 0, message.videoContext || null);
+      ? processWithChapters(message.chapters, sendProgressToTab, signal).then(validateAndNormalize)
+      : processTranscript(message.transcript, sendProgressToTab, message.durationSeconds || 0, message.videoContext || null, signal);
 
     pipeline
       .then(result => sendResponse({ success: true, data: result }))
-      .catch(err => sendResponse({ success: false, error: err.message }));
+      .catch(err => {
+        if (err.name === 'AbortError') {
+          sendResponse({ success: false, error: 'PIPELINE_CANCELLED' });
+        } else {
+          sendResponse({ success: false, error: err.message });
+        }
+      })
+      .finally(() => {
+        if (tabId) activePipelines.delete(tabId);
+      });
 
     return true;
   }
