@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 320px;
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #0f0f0f;
+      color: #e1e1e1;
+      padding: 16px;
+    }
+    h1 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-dot.connected { background: #3ea6ff; }
+    .status-dot.disconnected { background: #ff4444; }
+    .status-dot.checking { background: #aaa; animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { opacity: 0.4; } }
+    .status-label { font-size: 13px; flex: 1; }
+    .status-value { font-size: 12px; color: #aaa; }
+    .setup-guide {
+      margin-top: 12px;
+      padding: 12px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      display: none;
+    }
+    .setup-guide.visible { display: block; }
+    .setup-guide h2 {
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    .setup-guide code {
+      display: block;
+      background: #0a0a0a;
+      padding: 8px;
+      border-radius: 4px;
+      margin: 6px 0;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      position: relative;
+      color: #3ea6ff;
+    }
+    .setup-guide code:hover::after {
+      content: 'Click to copy';
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: #666;
+    }
+    .settings {
+      margin-top: 12px;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 13px;
+    }
+    select {
+      background: #1a1a1a;
+      color: #e1e1e1;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>YTBlog</h1>
+  <div class="status-row">
+    <div class="status-dot checking" id="ollama-dot"></div>
+    <span class="status-label">Ollama</span>
+    <span class="status-value" id="ollama-status">Checking...</span>
+  </div>
+  <div class="status-row">
+    <div class="status-dot checking" id="model-dot"></div>
+    <span class="status-label">Model</span>
+    <span class="status-value" id="model-status">Checking...</span>
+  </div>
+
+  <div class="setup-guide" id="setup-guide">
+    <h2>Setup Required</h2>
+    <p>Install Ollama and pull the model:</p>
+    <code id="cmd-pull">ollama pull llama3.2</code>
+    <code id="cmd-serve">ollama serve</code>
+    <p style="color:#888; margin-top:8px;">Click commands to copy. Ollama runs locally — your data stays private.</p>
+  </div>
+
+  <div class="settings">
+    <div class="setting-row">
+      <span>Model</span>
+      <select id="model-select">
+        <option value="" disabled selected>Detecting models...</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <span>Reading Speed</span>
+      <select id="speed-select">
+        <option value="150">Relaxed (150 wpm)</option>
+        <option value="250" selected>Normal (250 wpm)</option>
+        <option value="400">Fast (400 wpm)</option>
+        <option value="600">Speed (600 wpm)</option>
+      </select>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

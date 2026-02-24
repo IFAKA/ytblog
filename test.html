@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html dark>
+<head>
+  <meta charset="utf-8">
+  <title>YTBlog — Blog Article Tests</title>
+  <style>
+    body { background: #0a0a0a; color: #e8e8e8; font-family: Inter, system-ui, sans-serif; margin: 0; }
+    #results {
+      position: fixed; top: 10px; right: 10px; z-index: 9999;
+      background: rgba(20,20,20,0.95); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 16px; max-width: 320px; font-size: 13px;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .pass { color: #4caf50; } .fail { color: #f44336; }
+    .test-item { padding: 3px 0; }
+    #test-area { padding: 20px; }
+
+    /* Mock YouTube player */
+    #movie_player { width: 800px; height: 450px; background: #333; display: flex; align-items: center; justify-content: center; color: #888; border-radius: 12px; }
+    #movie_player video { display: none; }
+  </style>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="src/styles/base.css">
+  <link rel="stylesheet" href="src/styles/blog.css">
+</head>
+<body>
+  <div id="results"><strong>YTBlog Tests</strong><br><br></div>
+
+  <div id="test-area">
+    <div id="full-bleed-container">
+      <div id="movie_player">
+        <video src=""></video>
+        Mock YouTube Player
+      </div>
+    </div>
+  </div>
+
+  <!-- Load scripts in manifest order -->
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="src/content/transcript/extractor.js"></script>
+  <script src="src/content/transcript/parser.js"></script>
+  <script src="src/content/ui/injector.js"></script>
+  <script src="src/content/ui/player-replacer.js"></script>
+  <script src="src/content/ui/loading.js"></script>
+  <script src="src/content/blog-renderer.js"></script>
+  <script src="src/content/highlighter.js"></script>
+
+  <script>
+    // ——— Test Harness ———
+    const results = document.getElementById('results');
+    let passed = 0, failed = 0;
+
+    function assert(name, condition) {
+      const ok = !!condition;
+      if (ok) passed++; else failed++;
+      results.innerHTML += `<div class="test-item ${ok ? 'pass' : 'fail'}">${ok ? '✓' : '✗'} ${name}</div>`;
+      return ok;
+    }
+
+    // ——— Mock Data ———
+    const mockData = {
+      sections: [
+        {
+          title: "Introduction to Neural Networks",
+          recap: "Neural networks are computing systems inspired by biological neural networks that learn from data.",
+          thumbnailUrl: "",
+          timestampMs: 0,
+          thoughts: [
+            {
+              text: "Neural networks have revolutionized the field of artificial intelligence over the past decade.",
+              emphasis: ["Neural networks", "artificial intelligence"],
+              mode: "flow",
+              energy: "calm_intro",
+              complexity: 0.3
+            },
+            {
+              text: "The fundamental breakthrough came when researchers realized that deep architectures could learn hierarchical representations.",
+              emphasis: ["deep architectures", "hierarchical"],
+              mode: "impact",
+              energy: "climax",
+              complexity: 0.7
+            },
+            {
+              text: "First, you need training data.",
+              emphasis: ["training data"],
+              mode: "stack",
+              energy: "enumeration",
+              complexity: 0.2
+            },
+            {
+              text: "Second, you define your network architecture.",
+              emphasis: ["network architecture"],
+              mode: "stack",
+              energy: "enumeration",
+              complexity: 0.3
+            },
+            {
+              text: "Third, you run backpropagation to optimize weights.",
+              emphasis: ["backpropagation"],
+              mode: "stack",
+              energy: "enumeration",
+              complexity: 0.5
+            },
+            {
+              text: "The loss function can be expressed as $L = -\\sum_{i} y_i \\log(\\hat{y}_i)$ for classification tasks.",
+              emphasis: ["loss function"],
+              mode: "flow",
+              energy: "explanation",
+              complexity: 0.9
+            }
+          ]
+        },
+        {
+          title: "Practical Applications",
+          recap: "Neural networks power everything from image recognition to natural language processing.",
+          timestampMs: 180000,
+          thoughts: [
+            {
+              text: "Today, neural networks are everywhere. They power your phone's voice assistant, recommend what you watch, and even help diagnose diseases.",
+              emphasis: ["everywhere", "diagnose diseases"],
+              mode: "flow",
+              energy: "explanation",
+              complexity: 0.4
+            },
+            {
+              text: "AI is not just the future. It is the present.",
+              emphasis: ["present"],
+              mode: "impact",
+              energy: "climax",
+              complexity: 0.2
+            }
+          ]
+        }
+      ],
+      takeaways: [
+        "Neural networks learn hierarchical representations from data",
+        "Training requires data, architecture design, and optimization",
+        "Applications span from voice assistants to medical diagnosis"
+      ]
+    };
+
+    const mockVideoInfo = {
+      title: "Understanding Neural Networks: A Complete Guide",
+      author: "Tech Academy",
+      videoId: "test123",
+      lengthSeconds: 600
+    };
+
+    const mockExtendedData = {
+      channelAvatar: "",
+      channelName: "Tech Academy",
+      description: "A comprehensive guide to neural networks",
+      endscreenVideos: [
+        { videoId: "abc", title: "Deep Learning Basics", thumbnails: [] },
+        { videoId: "def", title: "PyTorch Tutorial", thumbnails: [] }
+      ]
+    };
+
+    // ——— Run Tests ———
+    const YT = window.YTBlog;
+
+    // Test 1: All modules loaded
+    assert('All modules loaded', YT && YT.BlogRenderer && YT.Highlighter && YT.replacePlayer);
+
+    // Test 2: Player replacement (fallback mode — no ytd-watch-flexy in test)
+    const stage = YT.replacePlayer();
+    assert('Player replaced → stage created', stage && stage.id === 'ytblog-stage');
+
+    // Test 3: Stage has content area
+    const content = YT.getContentArea();
+    assert('Content area exists', content && content.classList.contains('ytblog-content'));
+
+    // Test 4: Blog renderer creates article
+    let renderer = null;
+    let closeCalled = false;
+    renderer = new YT.BlogRenderer(stage, mockData, {
+      videoInfo: mockVideoInfo,
+      extendedData: mockExtendedData,
+      onClose: () => { closeCalled = true; }
+    });
+    const article = stage.querySelector('.ytblog-article');
+    assert('Article element created', !!article);
+
+    // Test 5: Title rendered
+    const h1 = article.querySelector('.ytblog-article-title');
+    assert('Title rendered', h1 && h1.textContent === mockVideoInfo.title);
+
+    // Test 6: Reading time badge
+    const badge = article.querySelector('.ytblog-article-reading-time');
+    assert('Reading time badge', badge && badge.textContent.includes('min read'));
+
+    // Test 7: TL;DR card
+    const tldr = article.querySelector('.ytblog-article-tldr');
+    assert('TL;DR card rendered', !!tldr);
+
+    // Test 8: TOC rendered (>1 section)
+    const toc = article.querySelector('.ytblog-article-toc');
+    const tocLinks = toc?.querySelectorAll('a');
+    assert('TOC with 2 section links', tocLinks && tocLinks.length === 2);
+
+    // Test 9: Section headings
+    const h2s = article.querySelectorAll('.ytblog-article-h2');
+    assert('2 section headings', h2s.length === 2);
+
+    // Test 10: Timestamp badge on section
+    const timestamp = article.querySelector('.ytblog-article-timestamp');
+    assert('Timestamp badge on heading', timestamp && timestamp.textContent === '0:00');
+
+    // Test 11: Second section timestamp
+    const timestamps = article.querySelectorAll('.ytblog-article-timestamp');
+    assert('Second timestamp = 3:00', timestamps[1] && timestamps[1].textContent === '3:00');
+
+    // Test 12: Flow mode → regular <p>
+    const flowP = article.querySelector('p[data-section="0"][data-thought="0"]');
+    assert('Flow → regular paragraph', flowP && !flowP.classList.contains('ytblog-article-insight'));
+
+    // Test 13: Impact mode → insight paragraph
+    const insightP = article.querySelector('.ytblog-article-insight');
+    assert('Impact → insight paragraph (bold bg)', insightP && insightP.dataset.thought === '1');
+
+    // Test 14: Stack mode → list items
+    const listUl = article.querySelector('.ytblog-article-list');
+    const listItems = listUl?.querySelectorAll('li');
+    assert('Stack → <ul> with 3 <li>s', listItems && listItems.length === 3);
+
+    // Test 15: Emphasis → <strong>
+    const strongs = flowP?.querySelectorAll('strong');
+    assert('Emphasis words → <strong>', strongs && strongs.length >= 1);
+
+    // Test 16: KaTeX math rendered
+    const mathEl = article.querySelector('.ytblog-math');
+    assert('KaTeX math rendered', !!mathEl);
+
+    // Test 17: Section recap
+    const recap = article.querySelector('.ytblog-article-recap');
+    assert('Section recap card', !!recap);
+
+    // Test 18: Takeaways box
+    const takeaways = article.querySelector('.ytblog-article-takeaways');
+    const takeawayItems = takeaways?.querySelectorAll('.ytblog-article-takeaways-list li');
+    assert('Takeaways box with 3 items', takeawayItems && takeawayItems.length === 3);
+
+    // Test 19: Return button
+    const returnBtn = article.querySelector('.ytblog-article-return');
+    assert('Return to Video button', returnBtn && returnBtn.textContent === 'Return to Video');
+
+    // Test 20: Close button
+    const closeBtn = article.querySelector('.ytblog-article-close');
+    assert('Close button rendered', !!closeBtn);
+
+    // Test 21: Copy button
+    const copyBtn = article.querySelector('.ytblog-article-copy-btn');
+    assert('Copy as Markdown button', !!copyBtn);
+
+    // Test 22: Progress bar
+    const progressBar = stage.querySelector('.ytblog-article-progress-fill');
+    assert('Progress bar rendered', !!progressBar);
+
+    // Test 23: Data attributes on thoughts
+    const dataEls = article.querySelectorAll('[data-section][data-thought]');
+    assert('Thoughts have data-section/data-thought attrs', dataEls.length >= 6);
+
+    // Test 24: No energy-based styling (no classes like ytblog-calm, ytblog-climax, etc.)
+    const energyClasses = article.querySelector('[class*="calm"], [class*="climax"], [class*="tension"], [class*="enumeration"]');
+    assert('No energy-based CSS classes', !energyClasses);
+
+    // Test 25: Only 3 visual styles used
+    const hasInsight = !!article.querySelector('.ytblog-article-insight');
+    const hasList = !!article.querySelector('.ytblog-article-list');
+    const hasRegularP = !!article.querySelector('p[data-thought]:not(.ytblog-article-insight)');
+    assert('Only 3 visual styles: paragraph + insight + list', hasInsight && hasList && hasRegularP);
+
+    // Test 26: Highlighter initialization
+    const highlighter = new YT.Highlighter(stage, 'test123');
+    assert('Highlighter initialized', !!highlighter);
+
+    // Test 27: Read next cards
+    const readnext = article.querySelector('.ytblog-readnext');
+    assert('Read Next section in takeaways', !!readnext);
+
+    // Test 28: Player restore
+    renderer.destroy();
+    highlighter.destroy();
+    YT.restorePlayer();
+    const restoredPlayer = document.getElementById('movie_player');
+    const stageGone = !document.getElementById('ytblog-stage');
+    assert('Player restored, stage removed', restoredPlayer && restoredPlayer.style.display !== 'none' && stageGone);
+
+    // ——— Summary ———
+    results.innerHTML += `<br><strong>${passed}/${passed + failed} passed</strong>`;
+  </script>
+</body>
+</html>

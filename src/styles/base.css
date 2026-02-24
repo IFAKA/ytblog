@@ -1,0 +1,294 @@
+/* YTBlog — Base Styles (shared infrastructure) */
+
+/* Dark mode (default — YouTube uses html[dark]) */
+:root,
+html[dark] {
+  --ytblog-bg: #0a0a0a;
+  --ytblog-text: #e8e8e8;
+  --ytblog-text-secondary: #a0a0a0;
+  --ytblog-accent: #3ea6ff;
+  --ytblog-warm: #f0c674;
+  --ytblog-dim: rgba(255,255,255,0.25);
+  --ytblog-border: rgba(255,255,255,0.08);
+}
+
+/* Light mode */
+html:not([dark]) {
+  --ytblog-bg: #f9f9f9;
+  --ytblog-text: #1a1a1a;
+  --ytblog-text-secondary: #606060;
+  --ytblog-accent: #065fd4;
+  --ytblog-warm: #b45309;
+  --ytblog-dim: rgba(0,0,0,0.25);
+  --ytblog-border: rgba(0,0,0,0.08);
+}
+
+/* ——— Read Button ——— */
+.ytblog-read-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 18px;
+  background: rgba(0,0,0,0.05);
+  color: var(--ytblog-text);
+  font-size: 14px;
+  font-family: 'YouTube Sans', 'Roboto', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-right: 8px;
+}
+html[dark] .ytblog-read-btn {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+.ytblog-read-btn:hover {
+  background: rgba(0,0,0,0.1);
+}
+html[dark] .ytblog-read-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+.ytblog-read-btn svg {
+  opacity: 0.9;
+}
+
+/* ——— Stage ——— */
+.ytblog-root {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--ytblog-bg);
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ytblog-content {
+  position: relative;
+  width: 100%;
+  user-select: text;
+}
+
+/* ——— Loading State ——— */
+.ytblog-loading {
+  text-align: center;
+  animation: ytblog-fade-in 0.5s ease;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+.ytblog-loading-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ytblog-text);
+  margin-bottom: 8px;
+  max-width: 500px;
+  text-wrap: balance;
+}
+.ytblog-loading-channel {
+  font-size: 14px;
+  color: var(--ytblog-text-secondary);
+  margin-bottom: 24px;
+}
+.ytblog-loading-status {
+  font-size: 14px;
+  color: var(--ytblog-text-secondary);
+  margin-bottom: 16px;
+}
+.ytblog-loading-dots span {
+  animation: ytblog-dot-pulse 1.4s infinite;
+  opacity: 0;
+}
+.ytblog-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.ytblog-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ytblog-dot-pulse {
+  0%, 80%, 100% { opacity: 0; }
+  40% { opacity: 1; }
+}
+.ytblog-loading-progress {
+  width: 200px;
+  height: 3px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+.ytblog-loading-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--ytblog-accent);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+.ytblog-loading-exit {
+  animation: ytblog-fade-out 0.4s ease forwards;
+}
+
+/* ——— Loading Backdrop ——— */
+.ytblog-loading-backdrop {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(20px) brightness(0.3);
+  opacity: 0.6;
+  z-index: 0;
+  transition: opacity 0.4s ease;
+}
+html:not([dark]) .ytblog-loading-backdrop {
+  filter: blur(20px) brightness(0.7);
+  opacity: 0.4;
+}
+
+/* ——— Loading Social Proof ——— */
+.ytblog-loading-social {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ytblog-text-secondary);
+  margin-bottom: 8px;
+}
+.ytblog-loading-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.ytblog-loading-subs {
+  opacity: 0.6;
+  font-size: 12px;
+}
+.ytblog-loading-subs::before {
+  content: '\00b7';
+  margin-right: 8px;
+}
+
+/* ——— Loading Metadata Row ——— */
+.ytblog-loading-meta {
+  font-size: 12px;
+  color: var(--ytblog-text-secondary);
+  opacity: 0.6;
+  margin-bottom: 20px;
+}
+
+/* ——— Error States ——— */
+.ytblog-error {
+  text-align: center;
+  max-width: 400px;
+  margin: 60px auto;
+}
+.ytblog-error-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ytblog-text);
+  margin-bottom: 8px;
+}
+.ytblog-error-message {
+  font-size: 14px;
+  color: var(--ytblog-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.ytblog-error-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.ytblog-error-btn {
+  padding: 8px 20px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--ytblog-text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.ytblog-error-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+.ytblog-error code {
+  display: block;
+  background: rgba(255,255,255,0.05);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--ytblog-accent);
+  margin: 8px 0;
+  cursor: pointer;
+}
+
+/* ——— Language Selector ——— */
+.ytblog-lang-select {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 18px;
+  background: rgba(0,0,0,0.05);
+  color: var(--ytblog-text);
+  font-size: 12px;
+  font-family: 'YouTube Sans', 'Roboto', sans-serif;
+  cursor: pointer;
+  margin-right: 8px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
+}
+html[dark] .ytblog-lang-select {
+  background-color: rgba(255,255,255,0.1);
+  color: #fff;
+}
+.ytblog-lang-select:hover {
+  background-color: rgba(0,0,0,0.1);
+}
+html[dark] .ytblog-lang-select:hover {
+  background-color: rgba(255,255,255,0.2);
+}
+
+/* ——— Animations ——— */
+@keyframes ytblog-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ytblog-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ——— KaTeX Math ——— */
+.ytblog-math {
+  display: inline;
+}
+.ytblog-math .katex {
+  color: var(--ytblog-text);
+  font-size: 1em;
+}
+.ytblog-math-block {
+  display: block;
+  text-align: center;
+  margin: 12px 0;
+}
+.ytblog-math-block .katex-display {
+  margin: 0;
+}
+.ytblog-math-block .katex {
+  color: var(--ytblog-text);
+  font-size: 1.15em;
+}
+
+/* ——— Reduced Motion ——— */
+@media (prefers-reduced-motion: reduce) {
+  .ytblog-loading-dots span { animation: none; opacity: 1; }
+  .ytblog-article-progress-fill { transition: none; }
+}
